@@ -1,0 +1,15 @@
+{
+    "name": "project_sekai_system",
+    "version": "1.0.0",
+    "description": "private Discord bot",
+    "author": "Kazuya Mito <penguin4glte@gmail.com>",
+    "main": "entry.js",
+    "scripts": {
+        "start": "node entry.js"
+    },
+    "dependencies": {
+        "typescript": "latest",
+        "discord.js": "13.1.0",
+        "openjtalk": "0.1.6"
+    }
+}
