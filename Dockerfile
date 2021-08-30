@@ -17,4 +17,4 @@ RUN apt-get install -y vim less open-jtalk open-jtalk-mecab-naist-jdic
 RUN wget https://sourceforge.net/projects/mmdagent/files/MMDAgent_Example/MMDAgent_Example-1.6/MMDAgent_Example-1.6.zip/download -O MMDAgent_Example-1.6.zip
 RUN unzip MMDAgent_Example-1.6.zip MMDAgent_Example-1.6/Voice/*
 RUN cp -r MMDAgent_Example-1.6/Voice/mei/ /usr/share/hts-voice
-CMD npm install && /bin/bash
+CMD npm install  && npx tsc && /bin/bash

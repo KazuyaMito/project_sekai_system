@@ -19,13 +19,9 @@ services:
     restart: always
     environment:
       MYSQL_DATABASE: docker_db
-      MYTSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+      MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
     ports:
       - 3314:3306
-    volumes:
-      - ./app/mysql/initdb.d:/docker-entry-point-initdb.d
-      - ./app/mysql/conf.d:/etc/mysql/conf.d
-      - ./log/mysql:/var/log/mysql
     networks:
       - docker-net
 
