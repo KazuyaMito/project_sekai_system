@@ -136,14 +136,14 @@ export class Database
         }
     }
 
-    public async getGuild(guildId: number): Promise<mysql.RowDataPacket[] | undefined>
+    public async getGuild(guildId: number): Promise<mysql.RowDataPacket | undefined>
     {
         const connection = await mysql.createConnection(this.mysqlSettings);
         try
         {
             const sql = "SELECT is_multi_line_read, is_name_read, read_limit FROM guilds WHERE id = ?";
             const [rows] = await connection.query<mysql.RowDataPacket[]>(sql, guildId);
-            if (rows.length > 0) return rows;
+            if (rows.length > 0) return rows[0];
             else return undefined;
         }
         catch (e)
