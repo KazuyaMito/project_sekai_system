@@ -1,9 +1,9 @@
-const mysql = require('mysql2/promise');
+import mysql from 'mysql2/promise';
 import { URL } from "url";
 
 export class Database
 {
-    mysqlSettings: any
+    mysqlSettings: mysql.ConnectionOptions
 
     constructor()
     {
@@ -24,7 +24,7 @@ export class Database
         const connection = await mysql.createConnection(this.mysqlSettings);
         try
         {
-            const [rows] = await connection.query("SELECT use_count FROM users WHERE user_id = ?", user_id);
+            const [rows] = await connection.query<mysql.RowDataPacket[]>("SELECT use_count FROM users WHERE user_id = ?", user_id);
             if (rows.length > 0) return rows[0].use_count;
             else return -1;
         }
