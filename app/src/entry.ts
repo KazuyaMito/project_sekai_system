@@ -9,16 +9,10 @@ const client = new Client(options);
 
 client.on('ready', () => {
     console.log(`Logged in as ${client.user!.tag}`);
+    client.user?.setActivity('&help');
 });
 
-client.on('messageCreate', message => {
-    if (message.author.bot) return;
-
-    if(message.content === "ping")
-    {
-        message.reply("Pong!")
-            .catch(console.error);
-    }
-});
+// client.on('messageCreate', async message => {
+// })
 
 client.login(config.token);
