@@ -19,14 +19,14 @@ export class Database
         }
     }
 
-    public async getUserUseCount(userId: number): Promise<number | undefined>
+    public async getUserUseCount(userId: number): Promise<{ valid: boolean, count?: number }>
     {
         const connection: mysql.Connection = await mysql.createConnection(this.mysqlSettings);
         try
         {
             const [rows] = await connection.query<mysql.RowDataPacket[]>("SELECT use_count FROM users WHERE user_id = ?", userId);
-            if (rows.length > 0) return rows[0].use_count;
-            else return undefined;
+            if (rows.length > 0) return { valid: true, count: rows[0].use_count };
+            else return { valid: false };
         }
         catch(e)
         {
@@ -94,7 +94,7 @@ export class Database
         }
     }
 
-    public async getUsers(): Promise<mysql.RowDataPacket[] | undefined>
+    public async getUsers(): Promise<{valid: boolean, users?: mysql.RowDataPacket[]}>
     {
         const connection: mysql.Connection = await mysql.createConnection(this.mysqlSettings);
         try
@@ -103,9 +103,9 @@ export class Database
             const [rows] = await connection.query<mysql.RowDataPacket[]>(sql);
             if (rows.length > 0)
             {
-                return rows;
+                return { valid: true, users: rows };
             }
-            else return undefined;
+            else return { valid: false };
         }
         catch(e)
         {
@@ -136,15 +136,15 @@ export class Database
         }
     }
 
-    public async getGuild(guildId: number): Promise<mysql.RowDataPacket | undefined>
+    public async getGuild(guildId: number): Promise<{valid: boolean, guild?: mysql.RowDataPacket}>
     {
         const connection = await mysql.createConnection(this.mysqlSettings);
         try
         {
             const sql = "SELECT is_multi_line_read, is_name_read, read_limit FROM guilds WHERE id = ?";
             const [rows] = await connection.query<mysql.RowDataPacket[]>(sql, guildId);
-            if (rows.length > 0) return rows[0];
-            else return undefined;
+            if (rows.length > 0) return {valid: true, guild: rows[0]};
+            else return { valid: false };
         }
         catch (e)
         {
@@ -219,7 +219,7 @@ export class Database
         }
     }
 
-    public async getDictionary(word: string, guildId: number): Promise<number | undefined>
+    public async getDictionary(word: string, guildId: number): Promise<{ valid: boolean, id?: number }>
     {
         const connection = await mysql.createConnection(this.mysqlSettings);
         try
@@ -228,8 +228,8 @@ export class Database
             const params = [word, guildId];
             const [rows] = await connection.query<mysql.RowDataPacket[]>(sql, params);
 
-            if (rows.length > 0) return rows[0].id;
-            else return undefined;
+            if (rows.length > 0) return {valid: true, id: rows[0].id};
+            else return { valid: false };
         }
         catch (e)
         {
@@ -241,7 +241,7 @@ export class Database
         }
     }
 
-    public async getDictionaries(guildId: number): Promise<mysql.RowDataPacket[] | undefined>
+    public async getDictionaries(guildId: number): Promise<{ valid: boolean, dictionaries?: mysql.RowDataPacket[] }>
     {
         const connection = await mysql.createConnection(this.mysqlSettings);
         try
@@ -249,8 +249,8 @@ export class Database
             const sql = "SELECT dictionaries.word, dictionaries.read FROM dictionaries WHERE dictionaries.guild_id = ?";
             const [rows] = await connection.query<mysql.RowDataPacket[]>(sql, guildId);
 
-            if(rows.length > 0) return rows;
-            else return undefined;
+            if(rows.length > 0) return { valid: true, dictionaries: rows };
+            else return { valid: false };
         }
         catch(e)
         {
