@@ -1,7 +1,8 @@
-import { TextChannel, Message, Snowflake, Guild, User, GuildMember, GuildChannel, ThreadChannel, Role } from 'discord.js';
+import { TextChannel, Message, Snowflake, Guild } from 'discord.js';
 import { joinVoiceChannel, entersState, VoiceConnection, VoiceConnectionStatus, createAudioPlayer, AudioPlayer, NoSubscriberBehavior, createAudioResource, StreamType } from '@discordjs/voice'
 import { Database } from '../modules/database';
 import { jtalk } from '../modules/jtalk';
+import { MessageParser } from '../modules/messageParser';
 
 export class TTS
 {
@@ -33,65 +34,37 @@ export class TTS
         if (this.text_channels[guildId] && message.channel.id === this.text_channels[guildId])
         {
             const db = new Database();
-
-            // URL省略処理
-            let get_msg = message.content.replace(/https?:\/\/[\w/:%#\$&\?\(\)~\.=\+\-]+/, 'URL省略');
-
-            // 複数行読み上げ
             const guildObject = await db.getGuild(parseInt(guildId, 10));
+
+            let msg = MessageParser.omitTheURL(message.content);
             if (guildObject.valid && guildObject.guild!.is_multi_line_read)
             {
-                get_msg = get_msg.replace('\n', '、');
+                msg = MessageParser.removeLineBreak(msg);
             }
 
-            // 名前読み上げ
-            if (guildObject !== void 0 && guildObject.guild!.is_name_read)
+            if (guildObject.valid && guildObject.guild!.is_name_read)
             {
-                const name = message.member?.displayName
-                if (name !== void 0) get_msg = `${name}、${get_msg}`;
+                msg = MessageParser.addUserName(msg, message.member!.displayName);
             }
 
-            // Discordスタンプ
-            get_msg = get_msg.replace('<:', '');
-            get_msg = get_msg.replace(/[0-9]*>/, '');
+            msg = MessageParser.parseDiscordReaction(msg);
 
-            // メンションのパース(displayNameに置き換え)
-            const userMentions = get_msg.match(/<(?:@\!|@)[0-9]+>/g)
+            const userMentions = message.content.match(/<(?:@\!|@)[0-9]+>/g);
             if (userMentions != null)
             {
-                userMentions.forEach(mention => {
-                    const userObject = this.getUserFromMention(mention, message.guild!);
-                    if (userObject.valid)
-                    {
-                        get_msg.replace(mention, userObject.member!.displayName);
-                    }
-                });
+                msg = MessageParser.parseUserMentions(msg, userMentions, message.guild);
             }
 
-            // チャンネルメンションのパース
-            const channelMentions = get_msg.match(/<#[0-9]+>/g);
+            const channelMentions = msg.match(/<#[0-9]+>/g);
             if (channelMentions != null)
             {
-                channelMentions.forEach(mention => {
-                    const channelObject = this.getChannelFromMention(mention, message.guild!);
-                    if (channelObject.valid)
-                    {
-                        get_msg.replace(mention, channelObject.channel!.name);
-                    }
-                });
+                msg = MessageParser.parseChannelMentions(msg, channelMentions, message.guild);
             }
 
-            // ロールメンションのパース
-            const roleMentions = get_msg.match(/<@&[0-9]+>/g);
+            const roleMentions = msg.match(/<@&[0-9]+>/g);
             if (roleMentions != null)
             {
-                roleMentions.forEach(mention => {
-                    const roleObject = this.getRoleFromMention(mention, message.guild!);
-                    if (roleObject.valid)
-                    {
-                        get_msg.replace(mention, roleObject.role!.name);
-                    }
-                });
+                msg = MessageParser.parseRoleMentions(msg, roleMentions, message.guild);
             }
 
             // 単語登録処理
@@ -99,7 +72,7 @@ export class TTS
             if (dictionaryObject.valid)
             {
                 dictionaryObject.dictionaries!.forEach(dictionary => {
-                    get_msg = get_msg.replace(dictionary.word, dictionary.read);
+                    msg = msg.replace(dictionary.word, dictionary.read);
                 });
             }
 
@@ -107,10 +80,10 @@ export class TTS
             if (guildObject.valid)
             {
                 const readLimit = guildObject.guild!.read_limit;
-                if (readLimit < 0 ) get_msg = get_msg.substr(0, readLimit);
+                if (readLimit < 0 ) msg = msg.substr(0, readLimit);
             }
 
-            const rawFileName: string = jtalk(get_msg);
+            const rawFileName: string = jtalk(msg);
             const resource = createAudioResource(rawFileName, { inputType: StreamType.Arbitrary });
             this.audioPlayer.play(resource);
         }
@@ -133,53 +106,6 @@ export class TTS
         {
             connection.destroy();
             throw error;
-        }
-    }
-
-    private getUserFromMention(mention: string, guild: Guild): { valid: boolean, member?: GuildMember }
-    {
-        if ((mention != null || mention != '') && mention.startsWith('<@') && mention.endsWith('>'))
-        {
-            mention = mention.slice(2, -1);
-
-            if (mention.startsWith('!'))
-            {
-                mention = mention.slice(1);
-            }
-
-            return { valid: true, member: guild.members.cache.get(mention) };
-        }
-        else
-        {
-            return { valid: false };
-        }
-    }
-
-    private getChannelFromMention(mention: string, guild: Guild): { valid: boolean, channel?: GuildChannel | ThreadChannel }
-    {
-        if ((mention != null || mention != '') && mention.startsWith('<#') && mention.endsWith('>'))
-        {
-            mention = mention.slice(2, -1);
-
-            return { valid: true, channel: guild.channels.cache.get(mention) };
-        }
-        else
-        {
-            return { valid: false };
-        }
-    }
-
-    private getRoleFromMention(mention: string, guild: Guild): { valid: boolean, role?: Role }
-    {
-        if ((mention != null || mention != '') && mention.startsWith('<@&') && mention.endsWith('>'))
-        {
-            mention = mention.slice(3, -1);
-
-            return { valid: true, role: guild.roles.cache.get(mention) };
-        }
-        else
-        {
-            return { valid: false };
         }
     }
 }
