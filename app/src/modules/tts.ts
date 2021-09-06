@@ -1,5 +1,4 @@
-//@ts-ignore
-import { TextChannel, Message, Snowflake, Guild, Collection } from 'discord.js';
+import { TextChannel, Message, Snowflake, Collection } from 'discord.js';
 import { joinVoiceChannel, entersState, VoiceConnection, VoiceConnectionStatus, createAudioPlayer, AudioPlayer, NoSubscriberBehavior, createAudioResource, StreamType } from '@discordjs/voice'
 import { Database } from '../modules/database';
 import { jtalk } from '../modules/jtalk';
@@ -7,8 +6,8 @@ import { MessageParser } from '../modules/messageParser';
 
 export class TTS
 {
-    voice_channels: any;
-    text_channels: any;
+    voice_channels: Collection<string, VoiceConnection>;
+    text_channels: Collection<string, TextChannel>;
     audioPlayer: AudioPlayer;
     isPlaying: boolean
 
@@ -31,8 +30,9 @@ export class TTS
             return;
 
         const guildId: Snowflake = message.guild.id;
+        const textChannel = this.text_channels.get(guildId);
 
-        if (this.text_channels.get(guildId) && message.channel.id === this.text_channels(guildId))
+        if (textChannel && message.channel.id === textChannel.id)
         {
             const db = new Database();
             const guildObject = await db.getGuild(parseInt(guildId, 10));
@@ -81,7 +81,7 @@ export class TTS
             if (guildObject.valid)
             {
                 const readLimit = guildObject.guild!.read_limit;
-                if (readLimit < 0 ) msg = msg.substr(0, readLimit);
+                if (readLimit < 0) msg = msg.substr(0, readLimit);
             }
 
             const rawFileName: string = jtalk(msg);
@@ -97,10 +97,9 @@ export class TTS
             guildId: channel.guild.id,
             adapterCreator: channel.guild.voiceAdapterCreator,
         });
+
         this.voice_channels.set(channel.guild.id, connection);
-        this.text_channels.set(channel.guild.id,channel);
-
-
+        this.text_channels.set(channel.guild.id, channel);
 
         try
         {
