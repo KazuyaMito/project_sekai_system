@@ -2,8 +2,10 @@ import { TextChannel, Message, MessageEmbed } from 'discord.js';
 import { Command } from '../structures/command';
 import { TTS } from "../modules/tts"
 import { VoiceConnection } from '@discordjs/voice';
+import { Database } from '../modules/database';
 
 const tts = new TTS;
+const db = new Database();
 
 module.exports = class TTSCommand extends Command
 {
@@ -39,6 +41,9 @@ module.exports = class TTSCommand extends Command
             if (typeof message.member.voice.channel.id === "string" && message.channel instanceof TextChannel)
             {
                 const connection: VoiceConnection = await tts.connectToChannel(message.member.voice.channel.id, message.channel);
+                const guild = message.guild;
+                db.addGuild(parseInt(guild!.id, 10), guild!.name);
+
                 const embed = new MessageEmbed()
                     .setColor("GREEN")
                     .setTitle("接続完了")
