@@ -1,5 +1,5 @@
 //@ts-ignore
-import { TextChannel, Message, Snowflake, Guild } from 'discord.js';
+import { TextChannel, Message, Snowflake, Guild, Collection } from 'discord.js';
 import { joinVoiceChannel, entersState, VoiceConnection, VoiceConnectionStatus, createAudioPlayer, AudioPlayer, NoSubscriberBehavior, createAudioResource, StreamType } from '@discordjs/voice'
 import { Database } from '../modules/database';
 import { jtalk } from '../modules/jtalk';
@@ -7,15 +7,15 @@ import { MessageParser } from '../modules/messageParser';
 
 export class TTS
 {
-    voice_channels: { [index: string]: VoiceConnection; }
-    text_channels: { [index: string]: string; }
+    voice_channels: any;
+    text_channels: any;
     audioPlayer: AudioPlayer;
     isPlaying: boolean
 
     constructor()
     {
-        this.voice_channels = {};
-        this.text_channels = {};
+        this.voice_channels = new Collection();
+        this.text_channels = new Collection();
         this.audioPlayer = createAudioPlayer({
             behaviors: {
                 noSubscriber: NoSubscriberBehavior.Play,
@@ -32,7 +32,7 @@ export class TTS
 
         const guildId: Snowflake = message.guild.id;
 
-        if (this.text_channels[guildId] && message.channel.id === this.text_channels[guildId])
+        if (this.text_channels.get(guildId) && message.channel.id === this.text_channels(guildId))
         {
             const db = new Database();
             const guildObject = await db.getGuild(parseInt(guildId, 10));
@@ -90,13 +90,17 @@ export class TTS
         }
     }
 
-    public async connectToChannel(voiceChannelId: string,channel: TextChannel): Promise<VoiceConnection>
+    public async connectToChannel(voiceChannelId: string, channel: TextChannel): Promise<VoiceConnection>
     {
         const connection = joinVoiceChannel({
             channelId: voiceChannelId,
             guildId: channel.guild.id,
             adapterCreator: channel.guild.voiceAdapterCreator,
         });
+        this.voice_channels.set(channel.guild.id, connection);
+        this.text_channels.set(channel.guild.id,channel);
+
+
 
         try
         {
