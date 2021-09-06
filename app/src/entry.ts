@@ -31,10 +31,16 @@ client.on('messageCreate', async (message:Message) => {
         if (commandPrefix === undefined) return;
 
         let command: any = client.commands.get(commandPrefix.toLowerCase());
-        if (command && !command.disable)
+        if (command && ! command.disable)
         {
             command.run(message,args);
         }
+    }
+    else
+    {
+        client.commands.forEach(command => {
+            command.onMessage(message);
+        });
     }
 });
 

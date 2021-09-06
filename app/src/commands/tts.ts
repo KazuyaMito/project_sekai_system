@@ -27,6 +27,11 @@ module.exports = class TTSCommand extends Command
         }
     }
 
+    public async onMessage(message: Message): Promise<void>
+    {
+        await tts.onMessage(message);
+    }
+
     private async join(message: Message): Promise<void>
     {
         if (message.member?.voice.channel)
