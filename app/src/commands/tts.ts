@@ -27,6 +27,10 @@ module.exports = class TTSCommand extends Command
     {
         switch(args[0])
         {
+            case undefined:
+                this.help(message);
+                break;
+
             case "join":
             case "j":
                 this.join(message);
@@ -180,6 +184,21 @@ module.exports = class TTSCommand extends Command
 
             message.channel.send({ embeds: [embed] });
         }
+    }
+
+    private async help(message: Message)
+    {
+        const embed = new MessageEmbed()
+            .setColor("AQUA")
+            .setTitle("Text To Speach")
+            .setDescription("チャットの読み上げ機能が利用できます。")
+            .addField("join", "コマンドを実行したユーザーが居るボイスチャンネルにbotが入室します。\nコマンドはjに省略できます。")
+            .addField("end", "読み上げを終了し、Botがボイスチャンネルから退出します。\nコマンドはeに省略できます。")
+            .addField("read_name", "名前読み上げの設定を変更します。\n`&tts read_name [on / off]`\nコマンドはrnに省略できます。")
+            .addField("read_multi", "複数行読み上げの設定を変更します。\n`&tts read_multi [on / off]`\nコマンドはrmに省略できます。")
+            .addField("read_limit", "読み上げ文字数の上限を変更します。\n`&tts read_limit [0-9]`\nコマンドはrlに省略できます。");
+
+        message.channel.send({ embeds: [embed] });
     }
 
     async connectToChannel(voiceChannelId: string, channel: TextChannel): Promise<VoiceConnection>
