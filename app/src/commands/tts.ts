@@ -110,7 +110,6 @@ module.exports = class TTSCommand extends Command
             }
 
             const queuedMessage = ttsGuild.message;
-            console.log(`nextMessage: ${queuedMessage}`);
             if(queuedMessage !== "")
             {
                 const rawFileName: string = jtalk(queuedMessage);
