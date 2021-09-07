@@ -1,4 +1,4 @@
-import { Intents, Message } from "discord.js";
+import { Intents, Message, VoiceState } from "discord.js";
 import { ProjectSekaiSystem } from  "./structures/client";
 import { config } from "./config";
 
@@ -42,6 +42,12 @@ client.on('messageCreate', async (message:Message) => {
             command.onMessage(message);
         });
     }
+});
+
+client.on("voiceStateUpdate", async (oldState: VoiceState, newState: VoiceState) => {
+    client.commands.forEach(command => {
+        command.onVoiceStateUpdate(oldState, newState);
+    });
 });
 
 client.init();

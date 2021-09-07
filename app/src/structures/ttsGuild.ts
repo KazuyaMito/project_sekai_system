@@ -1,19 +1,21 @@
 import { AudioPlayer, AudioPlayerStatus, AudioResource, PlayerSubscription, VoiceConnection } from "@discordjs/voice";
-import { TextChannel } from "discord.js";
+import { TextChannel, VoiceChannel } from "discord.js";
 import { Queue } from "../modules/queue";
 
 export class TTSGuild
 {
     _voiceConnection: VoiceConnection;
+    _voiceChannel: VoiceChannel;
     _textChannel: TextChannel;
     _audioPlayer: AudioPlayer;
     _subscription: PlayerSubscription;
     _isPlaying: boolean;
     _messages: Queue<string>;
 
-    constructor(voiceChannel: VoiceConnection, textChannel: TextChannel, audioPlayer: AudioPlayer, subscription: PlayerSubscription)
+    constructor(voiceConnection: VoiceConnection, voiceChannel: VoiceChannel, textChannel: TextChannel, audioPlayer: AudioPlayer, subscription: PlayerSubscription)
     {
-        this._voiceConnection = voiceChannel;
+        this._voiceConnection = voiceConnection;
+        this._voiceChannel = voiceChannel;
         this._textChannel = textChannel;
         this._audioPlayer = audioPlayer;
         this._subscription = subscription;
@@ -31,6 +33,11 @@ export class TTSGuild
     get voiceConnection(): VoiceConnection
     {
         return this._voiceConnection;
+    }
+
+    get voiceChannel(): VoiceChannel
+    {
+        return this._voiceChannel;
     }
 
     get textChannel(): TextChannel

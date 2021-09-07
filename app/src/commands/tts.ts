@@ -1,4 +1,4 @@
-import { TextChannel, Message, MessageEmbed, Collection, Snowflake } from 'discord.js';
+import { TextChannel, Message, MessageEmbed, Collection, Snowflake, VoiceState, VoiceChannel } from 'discord.js';
 import { Command } from '../structures/command';
 import { createAudioPlayer, createAudioResource, entersState, joinVoiceChannel, NoSubscriberBehavior, StreamType, VoiceConnection, VoiceConnectionStatus } from '@discordjs/voice';
 import { Database } from '../modules/database';
@@ -144,13 +144,29 @@ module.exports = class TTSCommand extends Command
         }
     }
 
+    public onVoiceStateUpdate(oldState: VoiceState, newState: VoiceState): void
+    {
+        const ttsGuild = this.ttsGuilds.get(oldState.guild.id);
+        if (ttsGuild && oldState.channelId !== null && ttsGuild.voiceChannel.id === oldState.channel!.id && newState.channelId === null && oldState.channel!.members.size <= 2)
+        {
+            const embed = new MessageEmbed()
+                .setColor("GREEN")
+                .setTitle("読み上げ終了")
+                .setDescription("誰もいなくなったため、読み上げを終了しました。");
+
+            ttsGuild.textChannel.send({ embeds: [embed] });
+            ttsGuild.destroy();
+            this.ttsGuilds.delete(oldState.guild.id);
+        }
+    }
+
     private async join(message: Message): Promise<void>
     {
         if (message.member?.voice.channel)
         {
-            if (typeof message.member.voice.channel.id === "string" && message.channel instanceof TextChannel)
+            if (typeof message.member.voice.channel.id === "string" && message.channel instanceof TextChannel && message.member.voice.channel instanceof VoiceChannel)
             {
-                const connection: VoiceConnection = await this.connectToChannel(message.member.voice.channel.id, message.channel);
+                const connection: VoiceConnection = await this.connectToChannel(message.member.voice.channel, message.channel);
                 const guild = message.guild;
 
                 const guildFromDatabase = await db.getGuild(parseInt(guild!.id, 10));
@@ -319,10 +335,10 @@ module.exports = class TTSCommand extends Command
         }
     }
 
-    async connectToChannel(voiceChannelId: string, channel: TextChannel): Promise<VoiceConnection>
+    async connectToChannel(voiceChannel: VoiceChannel, channel: TextChannel): Promise<VoiceConnection>
     {
         const connection = joinVoiceChannel({
-            channelId: voiceChannelId,
+            channelId: voiceChannel.id,
             guildId: channel.guild.id,
             adapterCreator: channel.guild.voiceAdapterCreator,
         });
@@ -339,7 +355,7 @@ module.exports = class TTSCommand extends Command
 
             const subscription = connection.subscribe(audioPlayer);
 
-            const ttsGuild = new TTSGuild(connection, channel, audioPlayer, subscription!);
+            const ttsGuild = new TTSGuild(connection, voiceChannel, channel, audioPlayer, subscription!);
             this.ttsGuilds.set(channel.guild.id, ttsGuild);
 
             return connection;

@@ -1,4 +1,4 @@
-import { Message } from "discord.js";
+import { Message, VoiceState } from "discord.js";
 
 export abstract class Command
 {
@@ -16,4 +16,5 @@ export abstract class Command
     }
 
     public abstract onMessage(message: Message): Promise<void>;
+    public abstract onVoiceStateUpdate(oldState: VoiceState, newState: VoiceState): void;
 }
