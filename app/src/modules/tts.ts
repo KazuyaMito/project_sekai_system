@@ -1,5 +1,5 @@
 import { TextChannel, Message, Snowflake, Collection } from 'discord.js';
-import { joinVoiceChannel, entersState, VoiceConnection, VoiceConnectionStatus, createAudioPlayer, AudioPlayer, NoSubscriberBehavior, createAudioResource, StreamType } from '@discordjs/voice'
+import { joinVoiceChannel, entersState, VoiceConnection, VoiceConnectionStatus, createAudioPlayer, AudioPlayer, NoSubscriberBehavior, createAudioResource, StreamType, PlayerSubscription } from '@discordjs/voice'
 import { Database } from '../modules/database';
 import { jtalk } from '../modules/jtalk';
 import { MessageParser } from '../modules/messageParser';
@@ -9,7 +9,8 @@ export class TTS
     voice_channels: Collection<string, VoiceConnection>;
     text_channels: Collection<string, TextChannel>;
     audioPlayer: AudioPlayer;
-    isPlaying: boolean
+    isPlaying: boolean;
+    subscription: PlayerSubscription | undefined;
 
     constructor()
     {
@@ -24,7 +25,7 @@ export class TTS
         this.isPlaying = false;
     }
 
-    public async onMessage(message: Message): Promise<void>
+    public async textToSpeach(message: Message): Promise<void>
     {
         if (message === null || message.author.bot || message.guild === null || message.content.startsWith('&') || message.content.startsWith(';'))
             return;
@@ -104,10 +105,12 @@ export class TTS
         try
         {
             await entersState(connection, VoiceConnectionStatus.Ready, 30e3);
+            this.subscription = connection.subscribe(this.audioPlayer);
             return connection;
         }
         catch (error)
         {
+            this.subscription?.unsubscribe();
             connection.destroy();
             throw error;
         }
