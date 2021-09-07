@@ -42,7 +42,12 @@ module.exports = class TTSCommand extends Command
             {
                 const connection: VoiceConnection = await tts.connectToChannel(message.member.voice.channel.id, message.channel);
                 const guild = message.guild;
-                db.addGuild(parseInt(guild!.id, 10), guild!.name);
+
+                const guildFromDatabase = await db.getGuild(parseInt(guild!.id, 10));
+                if(! guildFromDatabase.valid)
+                {
+                    db.addGuild(parseInt(guild!.id, 10), guild!.name);
+                }
 
                 const embed = new MessageEmbed()
                     .setColor("GREEN")
