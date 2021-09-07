@@ -8,6 +8,12 @@ import { TTSGuild } from '../structures/ttsGuild';
 
 const db = new Database();
 
+enum TTSGuildSettingType
+{
+    ReadName,
+    ReadMulti,
+}
+
 module.exports = class TTSCommand extends Command
 {
     ttsGuilds: Collection<string, TTSGuild>;
@@ -39,6 +45,21 @@ module.exports = class TTSCommand extends Command
             case "end":
             case "e":
                 this.end(message);
+                break;
+
+            case "read_name":
+            case "rn":
+                this.readName(message, args[1]);
+                break;
+
+            case "read_multi":
+            case "rm":
+                this.readMulti(message, args[1]);
+                break;
+
+            case "read_limit":
+            case "rl":
+                this.readLimit(message, args[1]);
                 break;
         }
     }
@@ -143,9 +164,9 @@ module.exports = class TTSCommand extends Command
                     .setTitle("接続完了")
                     .setDescription("読み上げを開始します。読み上げを終了したい場合は、 `&tts end` と入力してください")
                     .addField("読み上げ対象",`<#${message.channel.id}>`)
-                    .addField("ボイスチャンネル",`<#${connection.joinConfig.channelId}>`,true);
+                    .addField("ボイスチャンネル",`<#${connection.joinConfig.channelId}>`);
 
-                message.channel.send({ embeds: [embed] })
+                message.channel.send({ embeds: [embed] });
             }
         }
         else
@@ -154,7 +175,7 @@ module.exports = class TTSCommand extends Command
             .setDescription("ボイスチャンネルに接続してください。")
             .setColor("RED");
 
-            message.channel.send({ embeds: [embed] })
+            message.channel.send({ embeds: [embed] });
         }
     }
 
@@ -199,6 +220,103 @@ module.exports = class TTSCommand extends Command
             .addField("read_limit", "読み上げ文字数の上限を変更します。\n`&tts read_limit [0-9]`\nコマンドはrlに省略できます。");
 
         message.channel.send({ embeds: [embed] });
+    }
+
+    private async readName(message: Message, readName: string)
+    {
+        this.updateGuildSetting(message, readName, TTSGuildSettingType.ReadName);
+    }
+
+    private async readMulti(message: Message, readMulti: string)
+    {
+        this.updateGuildSetting(message, readMulti, TTSGuildSettingType.ReadMulti);
+    }
+
+    private async readLimit(message: Message, limit: string)
+    {
+        const guildId = message.guild!.id;
+        const guild = await db.getGuild(parseInt(guildId, 10));
+
+        if (! guild.valid)
+        {
+            const embed = new MessageEmbed()
+                .setColor("RED")
+                .setTitle("エラー")
+                .setDescription(`guild_id: ${guildId}は登録されていません。\n\`&tts join\`を正常に使うことで登録されます。`);
+
+            message.channel.send({ embeds: [embed] });
+        }
+        else
+        {
+            db.setReadLimit(parseInt(limit, 10), parseInt(guildId, 10));
+
+            const embed = new MessageEmbed()
+                .setColor("GREEN")
+                .setTitle("サーバー設定")
+                .setDescription("設定を更新しました")
+                .addField("読み上げ上限文字数", limit.toUpperCase());
+
+            message.channel.send({ embeds: [embed] });
+        }
+    }
+
+
+    private async updateGuildSetting(message: Message, flag: string, type: TTSGuildSettingType)
+    {
+        const guildId = message.guild!.id;
+        const guild = await db.getGuild(parseInt(guildId, 10));
+
+        if (! guild.valid)
+        {
+            const embed = new MessageEmbed()
+                .setColor("RED")
+                .setTitle("エラー")
+                .setDescription(`guild_id: ${guildId}は登録されていません。\n\`&tts join\`を正常に使うことで登録されます。`);
+
+            message.channel.send({ embeds: [embed] });
+        }
+        else
+        {
+            let readable = false;
+            switch(flag)
+            {
+                case "on":
+                    readable = true;
+                    break;
+                case "off":
+                    readable = false;
+                    break;
+                default:
+                    const embed = new MessageEmbed()
+                        .setColor("RED")
+                        .setTitle("エラー")
+                        .setDescription("`on`または`off`で指定してください");
+
+                    message.channel.send({ embeds: [embed] });
+                    break;
+            }
+
+            let typeName = "";
+            switch (type)
+            {
+                case TTSGuildSettingType.ReadName:
+                    db.setReadName(readable, parseInt(guildId, 10));
+                    typeName = "名前読み上げ";
+                    break;
+                case TTSGuildSettingType.ReadMulti:
+                    db.setReadMultiLine(readable, parseInt(guildId, 10));
+                    typeName = "複数行読み上げ";
+                    break;
+            }
+
+            const embed = new MessageEmbed()
+                .setColor("GREEN")
+                .setTitle("サーバー設定")
+                .setDescription("設定を更新しました")
+                .addField(typeName, flag.toUpperCase());
+
+            message.channel.send({ embeds: [embed] });
+        }
     }
 
     async connectToChannel(voiceChannelId: string, channel: TextChannel): Promise<VoiceConnection>
